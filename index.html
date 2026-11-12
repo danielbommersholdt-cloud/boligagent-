@@ -2,52 +2,55 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vores Boligagent 🏠</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f5f9;
-      padding: 25px;
-      max-width: 650px;
-      margin: auto;
-    }
-    h1 { color: #173b62; }
-    textarea {
-      width: 100%;
-      box-sizing: border-box;
-      height: 180px;
-      padding: 12px;
-      border-radius: 10px;
-    }
-    button {
-      background: #1769aa;
-      color: white;
-      border: 0;
-      padding: 13px 20px;
-      border-radius: 9px;
-      cursor: pointer;
-      margin-top: 12px;
-    }
-    #resultat {
-      background: white;
-      padding: 18px;
-      border-radius: 12px;
-      margin-top: 20px;
-      white-space: pre-wrap;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vores Boligagent</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f2f5f9;
+    max-width: 700px;
+    margin: auto;
+    padding: 20px;
+  }
+  h1 { color: #173b62; }
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    height: 190px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+  button {
+    background: #1769aa;
+    color: white;
+    border: none;
+    padding: 13px 18px;
+    border-radius: 9px;
+    margin-top: 12px;
+    cursor: pointer;
+  }
+  #resultat {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    margin-top: 20px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  [hidden] { display: none !important; }
+</style>
 </head>
 <body>
-  <h1>🏠 Vores Boligagent</h1>
-  <p>Indsæt et Facebook-opslag her:</p>
 
-  <textarea id="opslag"
-    placeholder="Indsæt boligopslaget her..."></textarea>
+<h1>🏠 Vores Boligagent</h1>
+<p>Indsæt et Facebook-opslag her:</p>
 
-  <button onclick="tjekOpslag()">🔎 Tjek bolig</button>
+<textarea id="opslag"
+  placeholder="Indsæt boligopslaget her..."></textarea>
 
+<button onclick="tjekOpslag()">🔎 Tjek bolig</button>
 
 <div id="resultat">Resultatet vises her.</div>
 
@@ -55,10 +58,174 @@
   📋 Kopiér kommentar
 </button>
 
-
-  <script>
-
+<script>
 let senesteKommentar = "";
+
+function laesBeloeb(tekst) {
+  if (!tekst) return null;
+
+  const match = tekst.match(
+    /(\d+(?:[.,]\d+)?)\s*(mio\.?|million(?:er)?|kr\.?)?/i
+  );
+
+  if (!match) return null;
+
+  const tal = match[1];
+  const enhed = match[2] || "";
+
+  if (/mio|million/i.test(enhed)) {
+    return Math.round(
+      Number(tal.replace(",", ".")) * 1000000
+    );
+  }
+
+  return Number(tal.replace(/[.,]/g, ""));
+}
+
+function findBeloeb(tekst, felter) {
+  for (const felt of felter) {
+    const match = tekst.match(
+      new RegExp(
+        felt + "\\s*(?:er|på|:)?\\s*" +
+        "([\\d.,]+\\s*(?:mio\\.?|millioner?|kr\\.?)?)",
+        "i"
+      )
+    );
+
+    if (match) return laesBeloeb(match[1]);
+  }
+
+  return null;
+}
+
+function tjekOpslag() {
+  const tekst = document.getElementById("opslag").value;
+  const resultat = document.getElementById("resultat");
+  const knap = document.getElementById("kopierKnap");
+
+  senesteKommentar = "";
+  knap.hidden = true;
+
+  if (!tekst.trim()) {
+    resultat.textContent = "Indsæt et opslag først.";
+    return;
+  }
+
+  const erAndel = /andelsbolig|andelslejlighed|andel\b/i.test(tekst);
+  const erLeje = /lejebolig|udlejes|til leje|husleje/i.test(tekst);
+
+  const rumMatch = tekst.match(
+    /(\d+)\s*[- ]?\s*(?:værelses|værelser|vær\.?)/i
+  );
+
+  const vaerelser = rumMatch ? Number(rumMatch[1]) : null;
+
+  const pris = findBeloeb(tekst, [
+    "pris", "salgspris", "andelspris", "til"
+  ]);
+
+  
+const boligydelse = findBeloeb(tekst, [
+  "boligydelse",
+  "boligydelsen",
+  "boligafgift",
+  "boligafgiften",
+  "månedlig ydelse",
+  "månedlig boligafgift"
+]);
+
+
+  const husleje = findBeloeb(tekst, [
+    "husleje", "leje", "månedlig leje"
+  ]);
+
+  const mangler = [];
+  const problemer = [];
+
+  if (!erAndel && !erLeje) {
+    mangler.push("Boligtype");
+  }
+
+  if (vaerelser === null) {
+    mangler.push("Antal værelser");
+  } else if (vaerelser < 2) {
+    problemer.push("Færre end 2 værelser");
+  }
+
+  if (erAndel) {
+    if (pris === null) {
+      mangler.push("Købspris");
+    } else if (pris > 1700000) {
+      problemer.push("Købspris over 1.700.000 kr.");
+    }
+
+    if (boligydelse === null) {
+      mangler.push("Boligydelse");
+    } else if (boligydelse > 6000) {
+      problemer.push("Boligydelse over 6.000 kr.");
+    }
+  } else if (erLeje) {
+    if (husleje === null) {
+      mangler.push("Husleje");
+    } else if (husleje > 9000) {
+      problemer.push("Husleje over 9.000 kr.");
+    }
+  }
+
+  let status = "";
+
+  if (problemer.length) {
+    status = "❌ PASSER IKKE";
+  } else if (mangler.length) {
+    status = "🟡 MANGLER OPLYSNINGER";
+  } else {
+    status = "✅ FORELØBIGT MATCH";
+  }
+
+  let besked = status + "\n\n";
+
+  besked += "Boligtype: " +
+    (erAndel ? "Andel" : erLeje ? "Leje" : "Ukendt") + "\n";
+
+  besked += "Værelser: " + (vaerelser ?? "Ukendt") + "\n";
+
+  if (erAndel) {
+    besked += "Pris: " +
+      (pris === null ? "Ukendt" : pris.toLocaleString("da-DK") + " kr.") + "\n";
+    besked += "Boligydelse: " +
+      (boligydelse === null ? "Ukendt" : boligydelse.toLocaleString("da-DK") + " kr.") + "\n";
+  } else if (erLeje) {
+    besked += "Husleje: " +
+      (husleje === null ? "Ukendt" : husleje.toLocaleString("da-DK") + " kr.") + "\n";
+  }
+
+  if (mangler.length) {
+    besked += "\nMangler: " + mangler.join(", ") + "\n";
+  }
+
+  if (problemer.length) {
+    besked += "\nProblemer: " + problemer.join(", ") + "\n";
+  }
+
+  if (!problemer.length && (erAndel || erLeje)) {
+    const boligtype = erAndel ? "andelsboligen" : "lejligheden";
+
+    senesteKommentar =
+      `Hej! Vi er et par, der er meget interesserede i ${boligtype}. ` +
+      "Vi søger et hjem i Storkøbenhavn. " +
+      (erAndel
+        ? "Vi er allerede bankgodkendte og klar til at gå videre med en handel. "
+        : "") +
+      "Vi vil meget gerne høre mere og komme til en fremvisning. 😊";
+
+    besked += "\n💬 Kommentarudkast:\n" + senesteKommentar;
+    knap.hidden = false;
+  }
+
+  besked += "\n\n📍 Husk at kontrollere området manuelt.";
+
+  resultat.textContent = besked;
+}
 
 async function kopierKommentar() {
   if (!senesteKommentar) return;
@@ -66,70 +233,10 @@ async function kopierKommentar() {
   try {
     await navigator.clipboard.writeText(senesteKommentar);
     alert("✅ Kommentaren er kopieret!");
-  } catch (fejl) {
-    alert("Kunne ikke kopiere automatisk. Prøv at markere teksten.");
+  } catch {
+    alert("Kunne ikke kopiere kommentaren.");
   }
 }
-
-    function findTal(tekst, felt) {
-      const match = tekst.match(
-        new RegExp(felt + "\\s*:\\s*([\\d.]+)", "i")
-      );
-      return match
-        ? Number(match[1].replace(/\./g, ""))
-        : null;
-    }
-
-    function tjekOpslag() {
-      const tekst = document.getElementById("opslag").value;
-      const resultat = document.getElementById("resultat");
-      senesteKommentar = "";
-document.getElementById("kopierKnap").hidden = true;
-
-      const erAndel = /andelsbolig/i.test(tekst);
-      const erLeje = /lejebolig|udlejes/i.test(tekst);
-
-      const vaerelser = Number(
-        tekst.match(/(\d+)\s+værelser/i)?.[1] ?? 0
-      );
-
-      const pris = findTal(tekst, "Pris");
-      const boligydelse = findTal(tekst, "Boligydelse");
-      const husleje = findTal(tekst, "Husleje");
-
-      const andelMatch =
-        erAndel &&
-        vaerelser >= 2 &&
-        pris !== null &&
-        boligydelse !== null &&
-        pris <= 1700000 &&
-        boligydelse <= 6000;
-
-      const lejeMatch =
-        erLeje &&
-        vaerelser >= 2 &&
-        husleje !== null &&
-        husleje <= 9000;
-
-      if (!andelMatch && !lejeMatch) {
-        resultat.textContent =
-          "❌ Intet bekræftet match. Boligen kan være for dyr, eller der mangler oplysninger.";
-        return;
-      }
-
-      const kommentar = andelMatch
-        ? "Hej! Vi er et par, der er meget interesserede i andelsboligen. Vi er allerede bankgodkendte og vil meget gerne høre mere og komme til en fremvisning hurtigst muligt. 😊"
-        : "Hej! Vi er et par, der er meget interesserede i lejligheden. Vi vil meget gerne høre mere og komme til en fremvisning. 😊";
-
-      
-senesteKommentar = kommentar;
-
-document.getElementById("kopierKnap").hidden = false;
-
-resultat.textContent =
-  "✅ MATCH!\n\n💬 Kommentarudkast:\n" + kommentar;
-
-    }
-  </script>
+</script>
 </body>
 </html>
