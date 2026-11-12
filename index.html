@@ -48,9 +48,29 @@
 
   <button onclick="tjekOpslag()">🔎 Tjek bolig</button>
 
-  <div id="resultat">Resultatet vises her.</div>
+
+<div id="resultat">Resultatet vises her.</div>
+
+<button id="kopierKnap" onclick="kopierKommentar()" hidden>
+  📋 Kopiér kommentar
+</button>
+
 
   <script>
+
+let senesteKommentar = "";
+
+async function kopierKommentar() {
+  if (!senesteKommentar) return;
+
+  try {
+    await navigator.clipboard.writeText(senesteKommentar);
+    alert("✅ Kommentaren er kopieret!");
+  } catch (fejl) {
+    alert("Kunne ikke kopiere automatisk. Prøv at markere teksten.");
+  }
+}
+
     function findTal(tekst, felt) {
       const match = tekst.match(
         new RegExp(felt + "\\s*:\\s*([\\d.]+)", "i")
@@ -63,6 +83,8 @@
     function tjekOpslag() {
       const tekst = document.getElementById("opslag").value;
       const resultat = document.getElementById("resultat");
+      senesteKommentar = "";
+document.getElementById("kopierKnap").hidden = true;
 
       const erAndel = /andelsbolig/i.test(tekst);
       const erLeje = /lejebolig|udlejes/i.test(tekst);
@@ -99,8 +121,14 @@
         ? "Hej! Vi er et par, der er meget interesserede i andelsboligen. Vi er allerede bankgodkendte og vil meget gerne høre mere og komme til en fremvisning hurtigst muligt. 😊"
         : "Hej! Vi er et par, der er meget interesserede i lejligheden. Vi vil meget gerne høre mere og komme til en fremvisning. 😊";
 
-      resultat.textContent =
-        "✅ MATCH!\n\n💬 Kommentarudkast:\n" + kommentar;
+      
+senesteKommentar = kommentar;
+
+document.getElementById("kopierKnap").hidden = false;
+
+resultat.textContent =
+  "✅ MATCH!\n\n💬 Kommentarudkast:\n" + kommentar;
+
     }
   </script>
 </body>
