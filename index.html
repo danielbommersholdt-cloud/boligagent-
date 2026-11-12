@@ -58,7 +58,61 @@
   📋 Kopiér kommentar
 </button>
 
+<button id="gemKnap" onclick="gemBolig()" hidden>
+  💾 Gem bolig
+</button>
+
+<h2>❤️ Gemte boliger</h2>
+<div id="gemteBoliger"></div>
+
+
 <script>
+
+let senesteOpslag = "";
+
+function gemBolig() {
+  if (!senesteOpslag) return;
+
+  const gemte = JSON.parse(
+    localStorage.getItem("gemteBoliger") || "[]"
+  );
+
+  if (!gemte.includes(senesteOpslag)) {
+    gemte.push(senesteOpslag);
+    localStorage.setItem("gemteBoliger", JSON.stringify(gemte));
+  }
+
+  visGemteBoliger();
+  alert("✅ Boligen er gemt!");
+}
+
+function visGemteBoliger() {
+  const gemte = JSON.parse(
+    localStorage.getItem("gemteBoliger") || "[]"
+  );
+
+  const container = document.getElementById("gemteBoliger");
+  container.replaceChildren();
+
+  if (gemte.length === 0) {
+    container.textContent = "Du har ingen gemte boliger endnu.";
+    return;
+  }
+
+  gemte.forEach((opslag) => {
+    const kort = document.createElement("div");
+    kort.style.background = "white";
+    kort.style.padding = "15px";
+    kort.style.marginBottom = "10px";
+    kort.style.borderRadius = "10px";
+    kort.style.whiteSpace = "pre-wrap";
+    kort.textContent = opslag;
+    container.appendChild(kort);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", visGemteBoliger);
+
 let senesteKommentar = "";
 
 function laesBeloeb(tekst) {
@@ -105,6 +159,8 @@ function tjekOpslag() {
 
   senesteKommentar = "";
   knap.hidden = true;
+  senesteOpslag = "";
+document.getElementById("gemKnap").hidden = true;
 
   if (!tekst.trim()) {
     resultat.textContent = "Indsæt et opslag først.";
@@ -208,6 +264,9 @@ const boligydelse = findBeloeb(tekst, [
   }
 
   if (!problemer.length && (erAndel || erLeje)) {
+    senesteOpslag = tekst;
+document.getElementById("gemKnap").hidden = false;
+
     const boligtype = erAndel ? "andelsboligen" : "lejligheden";
 
     senesteKommentar =
