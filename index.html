@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vores Boligagent 🏠</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f5f9;
+      padding: 25px;
+      max-width: 650px;
+      margin: auto;
+    }
+    h1 { color: #173b62; }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      height: 180px;
+      padding: 12px;
+      border-radius: 10px;
+    }
+    button {
+      background: #1769aa;
+      color: white;
+      border: 0;
+      padding: 13px 20px;
+      border-radius: 9px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    #resultat {
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏠 Vores Boligagent</h1>
+  <p>Indsæt et Facebook-opslag her:</p>
+
+  <textarea id="opslag"
+    placeholder="Indsæt boligopslaget her..."></textarea>
+
+  <button onclick="tjekOpslag()">🔎 Tjek bolig</button>
+
+  <div id="resultat">Resultatet vises her.</div>
+
+  <script>
+    function findTal(tekst, felt) {
+      const match = tekst.match(
+        new RegExp(felt + "\\s*:\\s*([\\d.]+)", "i")
+      );
+      return match
+        ? Number(match[1].replace(/\./g, ""))
+        : null;
+    }
+
+    function tjekOpslag() {
+      const tekst = document.getElementById("opslag").value;
+      const resultat = document.getElementById("resultat");
+
+      const erAndel = /andelsbolig/i.test(tekst);
+      const erLeje = /lejebolig|udlejes/i.test(tekst);
+
+      const vaerelser = Number(
+        tekst.match(/(\d+)\s+værelser/i)?.[1] ?? 0
+      );
+
+      const pris = findTal(tekst, "Pris");
+      const boligydelse = findTal(tekst, "Boligydelse");
+      const husleje = findTal(tekst, "Husleje");
+
+      const andelMatch =
+        erAndel &&
+        vaerelser >= 2 &&
+        pris !== null &&
+        boligydelse !== null &&
+        pris <= 1700000 &&
+        boligydelse <= 6000;
+
+      const lejeMatch =
+        erLeje &&
+        vaerelser >= 2 &&
+        husleje !== null &&
+        husleje <= 9000;
+
+      if (!andelMatch && !lejeMatch) {
+        resultat.textContent =
+          "❌ Intet bekræftet match. Boligen kan være for dyr, eller der mangler oplysninger.";
+        return;
+      }
+
+      const kommentar = andelMatch
+        ? "Hej! Vi er et par, der er meget interesserede i andelsboligen. Vi er allerede bankgodkendte og vil meget gerne høre mere og komme til en fremvisning hurtigst muligt. 😊"
+        : "Hej! Vi er et par, der er meget interesserede i lejligheden. Vi vil meget gerne høre mere og komme til en fremvisning. 😊";
+
+      resultat.textContent =
+        "✅ MATCH!\n\n💬 Kommentarudkast:\n" + kommentar;
+    }
+  </script>
+</body>
+</html>
