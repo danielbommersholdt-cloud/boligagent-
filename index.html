@@ -115,11 +115,12 @@ document.addEventListener("DOMContentLoaded", visGemteBoliger);
 
 let senesteKommentar = "";
 
+
 function laesBeloeb(tekst) {
   if (!tekst) return null;
 
   const match = tekst.match(
-    /(\d+(?:[.,]\d+)?)\s*(mio\.?|million(?:er)?|kr\.?)?/i
+    /(\d+(?:[.,]\d+)*)(?:\s*(mio\.?|million(?:er)?|kr\.?))?/i
   );
 
   if (!match) return null;
@@ -133,8 +134,13 @@ function laesBeloeb(tekst) {
     );
   }
 
-  return Number(tal.replace(/[.,]/g, ""));
+  if (/^\d{1,3}(?:\.\d{3})+$/.test(tal)) {
+    return Number(tal.replace(/\./g, ""));
+  }
+
+  return Number(tal.replace(",", "."));
 }
+
 
 function findBeloeb(tekst, felter) {
   for (const felt of felter) {
